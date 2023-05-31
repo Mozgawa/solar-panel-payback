@@ -34,9 +34,7 @@ async def startup_event() -> None:
         app.df = load_data()  # type: ignore
     except Exception as err:
         logger.error(f"{err}")
-        raise HTTPException(
-            status_code=500, detail="Failed to load data. Please try again later."
-        )
+        raise HTTPException(status_code=500, detail="Failed to load data. Please try again later.")
 
 
 @app.post("/api/{version}/payback", response_class=JSONResponse)
@@ -81,7 +79,5 @@ def shortest_payback(
         }
     except Exception as err:
         logger.error(f"{err}")
-        raise HTTPException(
-            status_code=500, detail="Failed to calculate. Please try again later."
-        )
+        raise HTTPException(status_code=500, detail="Failed to calculate. Please try again later.")
     return result
