@@ -16,6 +16,8 @@ Before installing the `pysolar`, ensure that the following software is installed
 
 # Quick start
 
+Create /data directory and put the xlsx files needed for this calculation there
+
 Create `.env` file containing necessary envvars, which will be described later
 
 Clone package
@@ -57,6 +59,10 @@ returns:
     {
         "solarPanelsWp": "7900.0"
     }
+
+there is also Swagger UI
+
+    http://localhost:8000/api/v1/docs
 
 # Environment variables
 

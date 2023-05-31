@@ -30,6 +30,7 @@ def load_data() -> Optional[pd.DataFrame]:
     spp = pd.DataFrame({"cet": spp["UTC"], "spp": spp[getenv("PROVIDER")]})  # type: ignore
     spp = spp.iloc[4:]
 
+    # Because belpex data is hourly it needs to be resampled
     rlp.set_index("cet", inplace=True)
     rlp = rlp["rlp"].resample("H").sum()  # type: ignore
     rlp = rlp.reset_index()
@@ -46,14 +47,30 @@ def load_data() -> Optional[pd.DataFrame]:
 
 def calculate(df: pd.DataFrame, consumption: float, cost: float, wp: float) -> float:
     """Calculate."""
-    df["cost"] = consumption * df["rlp"] * df["Euro"] / 1000
+    # consumption at the moment
+    df["consumption"] = consumption * df["rlp"]
+
+    # cost in euros in a given hour by multiplying the consumption at the moment by
+    # the price of electricity, then dividing by 1000 as the price in the table is given in EUR/kWh
+    df["cost"] = df["consumption"] * df["Euro"] / 1000
+
+    # electricity produced
     df["pv_yield"] = wp * df["spp"] / 1000
-    df["diff"] = df["pv_yield"] - (consumption * df["rlp"])
+
+    # difference between the electricity produced at a given moment and the current consumed
+    df["diff"] = df["pv_yield"] - df["consumption"]
+
+    # profit or possibly the loss resulting from the tariff
     df["profit"] = np.where(
         df["diff"] >= 0, 0.8 * df["cost"] * df["diff"], (1.2 * df["cost"] + 0.12) * df["diff"]
     )
-    df["savings"] = (consumption * df["rlp"] * df["cost"]) + df["profit"]
-    df = df.dropna()
-    df = df.replace(0, pd.NA).dropna()
+
+    # savings calculated as consumption multiplied by rlp and cost plus profit or possibly loss
+    df["savings"] = (df["consumption"] * df["cost"]) + df["profit"]
+
+    # annual sum of savings resulting from the use of panels
     savings = df["savings"].sum()
+
+    # if the annual savings is greater than 0, then dividing the total installation cost
+    # by this amount, we will get the expected return expressed in years
     return cost / savings if savings > 0 else float("inf")  # type: ignore
